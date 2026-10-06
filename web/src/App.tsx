@@ -9,6 +9,7 @@ import type {
   ValidateResponse,
 } from "./api";
 import { Board, key } from "./components/Board";
+import { Editor } from "./components/Editor";
 import { Sidebar } from "./components/Sidebar";
 
 /** Her hamlenin zaman damgası. Zorluk ayarı ve ileride insan çözücü
@@ -35,6 +36,7 @@ export default function App() {
   const [live, setLive] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [mode, setMode] = useState<"play" | "edit">("play");
 
   const moves = useRef<Move[]>([]);
   const startedAt = useRef<number>(Date.now());
@@ -232,25 +234,40 @@ export default function App() {
     <div className="shell">
       <header className="bar">
         <h1 className="wordmark">tapa</h1>
+        <div className="bar__modes">
+          <button
+            className={mode === "play" ? "is-open" : ""}
+            onClick={() => setMode("play")}
+          >
+            Oyna
+          </button>
+          <button
+            className={mode === "edit" ? "is-open" : ""}
+            onClick={() => setMode("edit")}
+          >
+            Düzenle
+          </button>
+        </div>
         <div className="bar__actions">
-          <button onClick={check} disabled={!puzzle || busy}>
+          <button onClick={check} disabled={mode !== "play" || !puzzle || busy}>
             Kontrol et
           </button>
-          <button onClick={askHint} disabled={!puzzle || busy}>
+          <button onClick={askHint} disabled={mode !== "play" || !puzzle || busy}>
             Bir hücre göster
           </button>
-          <button onClick={undo} disabled={!history.length}>
+          <button onClick={undo} disabled={mode !== "play" || !history.length}>
             Geri al
           </button>
-          <button onClick={clear} disabled={!puzzle}>
+          <button onClick={clear} disabled={mode !== "play" || !puzzle}>
             Tahtayı boşalt
           </button>
-          <button onClick={revealSolution} disabled={!puzzle || busy}>
+          <button onClick={revealSolution} disabled={mode !== "play" || !puzzle || busy}>
             Çözümü göster
           </button>
         </div>
       </header>
 
+      {mode === "edit" ? <Editor /> : (
       <main className="stage">
         <div className="stage__board">
           {puzzle ? (
@@ -282,6 +299,7 @@ export default function App() {
           onDownloadLog={downloadLog}
         />
       </main>
+      )}
     </div>
   );
 }

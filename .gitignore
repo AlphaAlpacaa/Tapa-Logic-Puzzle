@@ -1,2 +1,2 @@
-puzzles
-node_modules
+dataset/human/puzzles.jsonl
+dataset/human/*.txt

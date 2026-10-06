@@ -1,0 +1,100 @@
+{
+  "format": "tapa-puzzle",
+  "version": 1,
+  "rows": 7,
+  "cols": 7,
+  "clues": [
+    {
+      "r": 0,
+      "c": 0,
+      "values": [
+        1
+      ]
+    },
+    {
+      "r": 0,
+      "c": 3,
+      "values": [
+        2,
+        1
+      ]
+    },
+    {
+      "r": 1,
+      "c": 0,
+      "values": [
+        2,
+        1
+      ]
+    },
+    {
+      "r": 1,
+      "c": 3,
+      "values": [
+        5,
+        1
+      ]
+    },
+    {
+      "r": 1,
+      "c": 6,
+      "values": [
+        4
+      ]
+    },
+    {
+      "r": 2,
+      "c": 6,
+      "values": [
+        4
+      ]
+    },
+    {
+      "r": 3,
+      "c": 1,
+      "values": [
+        4,
+        1
+      ]
+    },
+    {
+      "r": 4,
+      "c": 4,
+      "values": [
+        4,
+        2
+      ]
+    },
+    {
+      "r": 5,
+      "c": 0,
+      "values": [
+        0
+      ]
+    },
+    {
+      "r": 5,
+      "c": 6,
+      "values": [
+        2,
+        1
+      ]
+    },
+    {
+      "r": 6,
+      "c": 3,
+      "values": [
+        3
+      ]
+    }
+  ],
+  "meta": {
+    "baslik": "orta 7x7",
+    "zorluk": "orta",
+    "kaynak": "tapa-0005",
+    "teknikler": {
+      "ipucu okuma": 34,
+      "2x2 kuralı": 4
+    }
+  }
+}

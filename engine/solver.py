@@ -360,6 +360,7 @@ class SolveStats:
     level_use: dict[int, int] = field(default_factory=dict)
     elapsed: float = 0.0
     logic_only: bool = True        # kör tahmine hiç gerek kalmadı mı
+    timed_out: bool = False        # zaman sınırına takıldı mı
 
     @property
     def effective_level(self) -> int:
@@ -487,18 +488,29 @@ class SolveResult:
         return self.count > 0
 
 
-def solve(board: Board, limit: int = 1, max_level: int = SEARCH_LEVEL) -> SolveResult:
-    """Bulmacayı çözer. `limit=2` ile teklik kontrolü yapılır."""
+def solve(board: Board, limit: int = 1, max_level: int = SEARCH_LEVEL,
+          time_limit: float | None = None) -> SolveResult:
+    """Bulmacayı çözer. `limit=2` ile teklik kontrolü yapılır.
+
+    `time_limit` verilirse arama o süreyi aşınca durur ve `stats.timed_out`
+    işaretlenir. Kıyaslamalarda ve zor örneklerde donmayı engeller; sonuç o
+    durumda eksik olabilir.
+    """
     stats = SolveStats()
     started = time.perf_counter()
     solutions: list[Board] = []
-    _search(board.copy(), limit, max_level, stats, solutions)
+    deadline = None if time_limit is None else started + time_limit
+    _search(board.copy(), limit, max_level, stats, solutions, deadline)
     stats.elapsed = time.perf_counter() - started
     return SolveResult(solutions=solutions, count=len(solutions), stats=stats)
 
 
-def _search(board: Board, limit: int, max_level: int,
-            stats: SolveStats, out: list[Board]) -> None:
+def _search(board: Board, limit: int, max_level: int, stats: SolveStats,
+            out: list[Board], deadline: float | None = None) -> None:
+    if deadline is not None and time.perf_counter() > deadline:
+        stats.timed_out = True
+        return
+
     stats.nodes += 1
     if not propagate(board, stats, max_level):
         return
@@ -512,11 +524,11 @@ def _search(board: Board, limit: int, max_level: int,
     stats.guesses += 1
     stats.logic_only = False
     for state in (Cell.FILLED, Cell.EMPTY):
-        if len(out) >= limit:
+        if len(out) >= limit or stats.timed_out:
             return
         trial = board.copy()
         trial.set_cell(*cell, state)
-        _search(trial, limit, max_level, stats, out)
+        _search(trial, limit, max_level, stats, out, deadline)
 
 
 def solve_logically(board: Board, max_level: int = MAX_LEVEL) -> tuple[Board, SolveStats]:

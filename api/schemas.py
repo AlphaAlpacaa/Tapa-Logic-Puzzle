@@ -100,3 +100,49 @@ class DifficultyResponse(BaseModel):
     techniques: dict[str, int]
     unique: bool
     elapsed: float
+
+
+class EntryRequest(BaseModel):
+    """Düzenleyiciden gelen bulmaca."""
+
+    rows: int = Field(..., ge=3, le=40)
+    cols: int = Field(..., ge=3, le=40)
+    clues: list[ClueModel]
+
+
+class SaveRequest(EntryRequest):
+    number: str = ""
+    source: str = ""
+
+
+class SolutionEntryRequest(BaseModel):
+    """Çözüm çiziminden giriş: '#' duvar, '.' boş, 'o' ipucu hücresi."""
+
+    rows: int = Field(..., ge=3, le=40)
+    cols: int = Field(..., ge=3, le=40)
+    grid: list[str]
+
+
+class SolutionSaveRequest(SolutionEntryRequest):
+    number: str = ""
+    source: str = ""
+
+
+class VerifyResponse(BaseModel):
+    ok: bool
+    status: str
+    message: str
+    code: str = ""
+    difficulty: dict[str, Any] | None = None
+    solution: list[str] | None = None
+    clues: list[ClueModel] | None = None
+    saved: bool | None = None
+    total: int | None = None
+
+
+class HumanEntry(BaseModel):
+    id: str
+    number: str
+    rows: int
+    cols: int
+    label: str

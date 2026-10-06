@@ -23,6 +23,12 @@ from . import service
 from .schemas import (
     BlankRequest,
     CodeRequest,
+    EntryRequest,
+    HumanEntry,
+    SaveRequest,
+    SolutionEntryRequest,
+    SolutionSaveRequest,
+    VerifyResponse,
     DifficultyResponse,
     HintResponse,
     PuzzleRequest,
@@ -125,6 +131,54 @@ def post_difficulty(request: PuzzleRequest) -> dict:
                                   [clue.model_dump() for clue in request.clues])
     except (ValueError, ClueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+# ---------------------------------------------------------------------- #
+# Düzenleyici: elle girilen bulmacalar
+# ---------------------------------------------------------------------- #
+
+@app.post("/api/human/verify", response_model=VerifyResponse)
+def post_verify(request: EntryRequest) -> dict:
+    """Girilen bulmacayı kaydetmeden denetler."""
+    try:
+        return service.verify_entry(request.rows, request.cols,
+                                    [clue.model_dump() for clue in request.clues])
+    except (ValueError, ClueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/human/save", response_model=VerifyResponse)
+def post_save(request: SaveRequest) -> dict:
+    """Doğrulanan bulmacayı insan veri kümesine ekler."""
+    try:
+        return service.save_human(request.rows, request.cols,
+                                  [clue.model_dump() for clue in request.clues],
+                                  request.number, request.source)
+    except (ValueError, ClueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/human/verify-solution", response_model=VerifyResponse)
+def post_verify_solution(request: SolutionEntryRequest) -> dict:
+    """Çizilen duvarı denetler, ipucu değerlerini duvardan türetir."""
+    try:
+        return service.verify_solution_entry(request.rows, request.cols, request.grid)
+    except (ValueError, ClueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/human/save-solution", response_model=VerifyResponse)
+def post_save_solution(request: SolutionSaveRequest) -> dict:
+    try:
+        return service.save_solution_entry(request.rows, request.cols, request.grid,
+                                           request.number, request.source)
+    except (ValueError, ClueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/api/human", response_model=list[HumanEntry])
+def get_human() -> list[dict]:
+    return service.list_human()
 
 
 # ---------------------------------------------------------------------- #

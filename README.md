@@ -363,8 +363,6 @@ bırakıyordu.
 # CP-SAT karşılaştırması (5. aşama)
 
 ```bash
-pip install -r requirements-cpsat.txt
-
 python -m tools.benchmark              # veri kümesinde doğrula ve ölç
 python -m tools.benchmark --scale      # artan boyutlarda ölçeklenme
 python -m tools.benchmark --encodings  # iki bağlantılılık kodlamasını kıyasla
@@ -379,9 +377,10 @@ Fark, `solver.py` ile karşılaştırınca net görünür. Orada Tapa'yı *nası
 çözeceğimizi adım adım yazdık. Burada yalnızca **ne istediğimizi** bildiriyoruz;
 arama stratejisi çözücünün işi.
 
-`ortools` kurulu değilse `engine/cpsat.py` içe aktarılabilir ama `available()`
-False döner. Motor, arayüz ve üretici etkilenmez — tek dış bağımlılık burada
-kalır.
+`ortools`, `requirements.txt` içinde. Yine de içe aktarma korumalı: paket
+bulunamazsa `engine/cpsat.py` yüklenir ama `available()` False döner ve
+çağrılar açık bir hata mesajı verir. Motor, arayüz ve üretici etkilenmez —
+kurulum yarım kalsa bile sistemin geri kalanı çalışmaya devam eder.
 
 ## Kısıtların kodlanması
 
@@ -397,26 +396,36 @@ kalır.
 kısıtı bu listeyi doğrudan kabul ettiği için kural aritmetiğe çevrilmeden
 aktarılıyor.
 
-## Bağlantılılık: neden erişilebilirlik etiketleri
+## Bağlantılılık: tasarım tahminini ölçüm çürüttü
 
 CP-SAT'ta "şu hücreler tek parça olsun" diye hazır bir kısıt yok. İki yol
 yazıldı:
 
-**`reach` (varsayılan).** Her dolu hücreye bir derinlik etiketi verilir. Tam
-olarak bir dolu hücre kök olur (etiket 0); diğer her dolu hücrenin, etiketi bir
-eksik olan dolu bir ortogonal komşuyu "öncül" seçmesi şart koşulur. Her dolu
-hücreden köke azalan bir zincir uzanır, duvar tek parça kalır. Akış tabanlı
-kodlamaya tercih edildi: büyük-M çarpımı gerektirmiyor, hücre başına dört boole
-değişkeniyle sınırlı kalıyor.
+**`cuts` (varsayılan).** Önce bağlantılılık olmadan çözülür; sonuç parçalıysa
+"bu parça dolu ve çevresi boş" durumu yasaklanıp yeniden çözülür.
 
-**`cuts`.** Önce bağlantılılık olmadan çözülür; sonuç parçalıysa "bu parça dolu
-ve çevresi boş" durumu yasaklanıp yeniden çözülür. Model küçük kalır ama tur
-sayısı artabilir.
+**`reach`.** Her dolu hücreye bir derinlik etiketi verilir. Tam olarak bir dolu
+hücre kök olur (etiket 0); diğer her dolu hücrenin, etiketi bir eksik olan dolu
+bir ortogonal komşuyu "öncül" seçmesi şart koşulur. Her dolu hücreden köke
+azalan bir zincir uzanır. Akış tabanlı kodlamaya tercih edildi: büyük-M çarpımı
+gerektirmiyor, hücre başına dört boole değişkeniyle sınırlı kalıyor.
 
-Varsayılanın `reach` olmasının sebebi, modelin **eksiksiz** kalması. Teklik
-kontrolü ve ileride öğrenilmiş modellerin değerlendirilmesi, modelin tek başına
-bütün kuralları içermesini gerektiriyor; `cuts` yönteminde bağlantılılık modelin
-dışında, döngünün içinde kalıyor.
+Başlangıçta varsayılan `reach` seçilmişti; gerekçe, modelin eksiksiz kalması ve
+teklik kontrolünün bağlantılılığı döngü dışında bırakmamasıydı. Ölçüm bunu
+çürüttü: `--encodings` karşılaştırmasında `cuts` dört ila beş kat hızlı çıktı ve
+**kesme turu sayısı her bulmacada sıfır** oldu. Yani ipucu ve 2x2 kısıtları
+bağlantılılığı pratikte zaten zorluyor; `reach` kodlamasının eklediği
+değişkenler saf maliyete dönüşüyor.
+
+| | etiket (`reach`) | kesme (`cuts`) |
+|---|---|---|
+| 10 bulmaca toplam | 0.50s | 0.12s |
+| gereken kesme turu | — | 0 |
+
+`reach` yine de duruyor. Yarım bırakılmış tahtalarda (oyun ortasında ipucu
+üretimi, ileride model değerlendirmesi) kısıtlar zayıfladığı için parçalı
+çözümler ortaya çıkabilir; o durumda kesme turları çoğalır ve eksiksiz model
+avantaja dönebilir. Bu da ölçülerek karar verilecek.
 
 ## Çözüm sayma
 
@@ -431,3 +440,156 @@ etiketleri yardımcı değişken olduğu için aynı boyama farklı etiketlerle 
 **doğrular**: çözümler ve çözüm sayıları karşılaştırılır. Tamamen farklı iki
 yöntemin aynı cevapta buluşması, doğruluk için elimizdeki en güçlü kanıt.
 Ayrışırlarsa en az biri hatalıdır ve bunu bilmek gerekir.
+
+## Ölçeklenme testinin ayarları neden farklı
+
+`--scale`, bulmacaları veri kümesi üretimindeki katı ayarlarla değil, gevşek
+ayarlarla üretir: ipucu değerine sınır konmaz, eleme hafif tutulur, hedef zorluk
+şart koşulmaz. Sebebi, bu testin amacının güzel bulmaca üretmek değil
+çözücüleri büyük tahtalarda yarıştırmak olması. Katı ayarlarla 10x10 üstünde
+uygun duvar bulunamıyor ve test ölçmek istediği şeye hiç ulaşamıyordu.
+
+## İlk ölçümün okunması
+
+Veri kümesi üzerinde mantıksal çözücü CP-SAT'tan yaklaşık dört kat hızlı çıktı
+(ortalama 0.013s / 0.060s). Bu sonucu olduğundan fazla okumamak gerekir:
+
+1. Küçük tahtalarda model kurma maliyeti baskın; asıl arama sürenin küçük bir
+   parçası.
+2. Daha önemlisi, karşılaştırma mantıksal çözücünün lehine kurulu. Veri
+   kümesindeki her bulmaca "saf mantıkla çözülebilsin" şartıyla üretildi, yani
+   bunlar mantıksal çözücünün hiç arama yapmadan bitirebildiği bulmacalar.
+   CP-SAT'ın asıl gücü olan çelişki öğrenme bu örneklerde hiç devreye girmiyor:
+   8x8'de 258 dallanmaya karşılık **sıfır çatışma** ölçüldü.
+
+Adil karşılaştırma, aramanın gerçekten gerektiği örneklerde yapılmalı.
+
+## Ölçeklenme sonucu: kesişme yok, çünkü kimse aramıyor
+
+8x8'den 16x16'ya kadar yapılan ölçümde CP-SAT her boyutta **sıfır dallanma ve
+sıfır çatışma** raporladı. Yani arama hiç devreye girmedi; bulmacaları
+ön-işleme ve yayılım bitirdi. Ölçülen süre farkı algoritmaların değil, Python
+tarafında model kurma maliyetinin farkı — 16x16'da 256 hücre için binlerce
+kısıt nesnesi yaratılıyor.
+
+Mantıksal çözücü için de durum aynı: veri kümesi ve ölçeklenme testindeki
+bulmacalar ipucu açısından zengin olduğu için yayılım tek başına yetiyor.
+
+Bunun asıl sebebi bağlantılılık teknikleri. "Ulaşılmaz bölge" ve "bağlantı
+boğazı" o kadar çok hücre kapatıyor ki arama nadiren gerekiyor.
+
+## Arama ne zaman gerekiyor: `--hard`
+
+```bash
+python -m tools.benchmark --hard                    # 18,22,26,30
+python -m tools.benchmark --hard --keep 0.5 --sizes 26,30
+```
+
+Bu kip ipucuların yalnızca bir kısmını bırakır. Tahta eksik kısıtlandığı için
+tek çözümlü olmayabilir; istenen de budur. Sorulan soru "çözümü bul" değil,
+"en fazla iki çözüm say" — yani teklik kontrolü, üreticinin gerçekte ihtiyaç
+duyduğu işlem.
+
+Mantıksal çözücünün ölçülen davranışı (ipucuların %60'ı bırakılarak):
+
+| boyut | seyrek ipucu | tam ipucu |
+|---|---|---|
+| 18x18 | 0.23s | 0.08s |
+| 22x22 | 0.81s | 0.13s |
+| 26x26 | 1.26s | 0.20s |
+| 30x30 | 2.48s | 0.23s |
+
+Tam ipuçlu sütun neredeyse düz: orada yayılım bitiriyor, boyut pek fark
+etmiyor. Seyrek sütun ise hızla büyüyor — arama orada başlıyor. CP-SAT ile
+anlamlı karşılaştırma bu rejimde yapılmalı.
+
+Mantıksal çözücüye bu amaçla zaman sınırı eklendi
+(`solver.solve(..., time_limit=...)`); aşıldığında `stats.timed_out`
+işaretlenir ve sonuç eksik sayılır.
+
+---
+
+# İnsan tasarımı bulmacalar ve karşılaştırma (6. aşama)
+
+```bash
+python -m tools.import_human dataset/human/kaynak.txt --name "kitap adı"
+python -m tools.analyze
+```
+
+İnsan tasarımı bulmacalar `dataset/human/` altında, üreticinin çıktısından
+**ayrı** tutulur. Gerekçesi şu soru: üretilmiş veriyle eğitilen bir model,
+insan tasarımı bulmacalarda ne yapıyor? İki kümeyi karıştırmak bu soruyu
+cevaplanamaz hale getirir.
+
+## Çözücü, okumanın denetçisi
+
+`import_human` her bulmacayı çözücüden geçirir ve yalnızca tek çözümlü
+olanları kabul eder. Elle ya da görüntüden girilen bir bulmacada tek bir
+rakam hatası, bulmacayı neredeyse her zaman çözümsüz ya da çok çözümlü yapar.
+Kusursuz bir denetim değil — hatalı bir okuma tesadüfen başka bir geçerli
+bulmaca üretebilir — ama hataların büyük çoğunluğunu yakalar.
+
+## `analyze` neyi ölçüyor
+
+İpucu değeri dağılımı, çok sayılı ipucu oranı ve kombinasyonları, ipucu ve
+duvar yoğunluğu, ve **simetri**.
+
+Simetri ölçümü üretilmiş veri üzerinde şimdiden bir açık gösterdi:
+
+| ölçüt | üretilmiş |
+|---|---|
+| tam 180° simetrik bulmaca | %0 |
+| dönme eşi olan ipucu oranı | %19 (tesadüf seviyesi) |
+
+İnsan tasarımı Tapa bulmacalarında ipucu yerleşimi genellikle dönme
+simetrisine sahiptir. Üretici ipucuları tamamen rastgele yerleştiriyor,
+dolayısıyla bu geleneği hiç taşımıyor. Ölçüm insan verisiyle doğrulanırsa,
+üreticiye simetri hedefi eklemek görsel kalite açısından en büyük kazanç
+olacak.
+
+## Arayüzde bulmaca girme
+
+Üst çubuktaki **Düzenle** kipi boş bir ızgara açar. İki giriş yolu var,
+çünkü kitapta iki ayrı sayfa var: bulmaca sayfası ve çözüm sayfası.
+
+### Sayılardan Hücreye tıkla ya da
+oklarla gez, rakamları yaz. Aynı hücreye birden çok rakam yazılabilir: `1`
+sonra `2` yazmak o hücreye `1 2` ipucusunu koyar. Geri tuşu son rakamı siler,
+Delete hücreyi boşaltır. Izgara boyutu yandan değiştirilir.
+
+**Kaydet**, bulmacayı önce çözücüden geçirir ve yalnızca tek çözümlüyse
+`dataset/human/puzzles.jsonl` dosyasına ekler. Tek bir rakam yanlış
+girildiyse bulmaca neredeyse her zaman çözümsüz ya da çok çözümlü çıkar;
+denetim bunu yakalar ve kayıt yapılmaz. Kayıttan sonra ızgara temizlenir ve
+kaynak numarası kendiliğinden bir artar, böylece sıradaki bulmacaya geçmek
+tek tuş meselesi olur.
+
+Aynı bulmaca iki kez kaydedilmez.
+
+### Çözümden
+
+Çözüm sayfasına bakıyorsan rakamları okumak gereksiz: duvar görünüyorsa her
+ipucu hücresinin değeri hesaplanabilir. Sol tık duvar örer (sürükleyerek de
+olur), sağ tık ipucu hücresini işaretler. Klavyede boşluk duvar, `O` ipucu
+hücresi. Doğrulamadan sonra hesaplanan sayılar ızgarada görünür.
+
+Üç kontrol birden yapılır: çizilen duvar Tapa kurallarına uyuyor mu, türetilen
+bulmaca tek çözümlü mü, ve bulunan çözüm çizilen duvarla aynı mı.
+
+**Bu kipte denetim daha zayıftır ve bunu bilmek gerekir.** İpucu değerleri
+çizilen duvardan türetildiği için, yanlış çizilmiş ama yine de geçerli bir
+duvar tutarlı bir bulmaca üretir ve denetimden geçer. Sayılardan girişte bu
+olmaz, çünkü orada sayılar dışarıdan gelir ve çözücü tutarlılığı sınar. Bu
+yüzden hesaplanan sayılar ızgarada gösteriliyor: kitaptakiyle göz
+karşılaştırması son kontrol.
+
+| Uç nokta | İş |
+|---|---|
+| `POST /api/human/verify` | sayılardan girileni denetler |
+| `POST /api/human/save` | doğrulayıp insan veri kümesine ekler |
+| `POST /api/human/verify-solution` | çizilen duvarı denetler, sayıları türetir |
+| `POST /api/human/save-solution` | türetip doğrulayıp kaydeder |
+| `GET /api/human` | kaydedilenleri listeler |
+
+Metin dosyasından toplu aktarım için `tools/import_human.py` (kısa kod) ve
+`tools/from_solution.py` (çözüm ızgarası) duruyor.

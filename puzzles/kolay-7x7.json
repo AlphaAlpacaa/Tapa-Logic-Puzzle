@@ -1,0 +1,97 @@
+{
+  "format": "tapa-puzzle",
+  "version": 1,
+  "rows": 7,
+  "cols": 7,
+  "clues": [
+    {
+      "r": 0,
+      "c": 6,
+      "values": [
+        2
+      ]
+    },
+    {
+      "r": 1,
+      "c": 0,
+      "values": [
+        2,
+        2
+      ]
+    },
+    {
+      "r": 1,
+      "c": 3,
+      "values": [
+        5
+      ]
+    },
+    {
+      "r": 1,
+      "c": 4,
+      "values": [
+        4
+      ]
+    },
+    {
+      "r": 2,
+      "c": 3,
+      "values": [
+        5
+      ]
+    },
+    {
+      "r": 2,
+      "c": 5,
+      "values": [
+        2,
+        1
+      ]
+    },
+    {
+      "r": 4,
+      "c": 1,
+      "values": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "r": 4,
+      "c": 2,
+      "values": [
+        5
+      ]
+    },
+    {
+      "r": 5,
+      "c": 0,
+      "values": [
+        0
+      ]
+    },
+    {
+      "r": 5,
+      "c": 5,
+      "values": [
+        2
+      ]
+    },
+    {
+      "r": 6,
+      "c": 3,
+      "values": [
+        5
+      ]
+    }
+  ],
+  "meta": {
+    "baslik": "kolay 7x7",
+    "zorluk": "kolay",
+    "kaynak": "tapa-0006",
+    "teknikler": {
+      "ipucu okuma": 38
+    }
+  }
+}

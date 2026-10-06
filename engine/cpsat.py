@@ -68,7 +68,7 @@ class Model:
     board: Board
 
 
-def build_model(board: Board, connectivity: Connectivity = "reach") -> Model:
+def build_model(board: Board, connectivity: Connectivity = "cuts") -> Model:
     """Tapa kurallarını CP-SAT kısıtlarına çevirir.
 
     Tahtanın mevcut boyaması da modele sabit olarak girer; böylece aynı model
@@ -206,7 +206,7 @@ class CpSatResult:
     conflicts: int = 0
     cut_rounds: int = 0          # yalnızca "cuts" kodlamasında
     hit_limit: bool = False      # zaman sınırına takıldı mı
-    connectivity: str = "reach"
+    connectivity: str = "cuts"
 
     @property
     def unique(self) -> bool:
@@ -286,7 +286,7 @@ def _add_connectivity_cut(model, cells, board: Board, group: set[Position]) -> N
     model.AddBoolOr(literals)
 
 
-def solve(board: Board, limit: int = 1, *, connectivity: Connectivity = "reach",
+def solve(board: Board, limit: int = 1, *, connectivity: Connectivity = "cuts",
           time_limit: float | None = 60.0, workers: int = 8) -> CpSatResult:
     """Bulmacayı CP-SAT ile çözer.
 
@@ -294,9 +294,14 @@ def solve(board: Board, limit: int = 1, *, connectivity: Connectivity = "reach",
     yasaklayıp yeniden çözerek sayılır; bu, yardımcı değişkenlerin aynı
     boyamayı birden çok kez saydırmasını engeller.
 
-    `connectivity="reach"` bağlantılılığı modelin içine gömer (eksiksiz model).
-    `"cuts"` ise önce bağlantılılıksız çözer, parçalı çıkarsa yasak ekleyip
-    yeniden dener — model küçük kalır ama tur sayısı artabilir.
+    `connectivity="cuts"` (varsayılan) önce bağlantılılık kısıtı olmadan çözer;
+    sonuç parçalıysa o parçayı yasaklayıp yeniden dener. `"reach"` ise
+    bağlantılılığı modelin içine gömer.
+
+    Varsayılanın `cuts` olmasının sebebi ölçüm: ipucu ve 2x2 kısıtları
+    bağlantılılığı pratikte zaten zorluyor, dolayısıyla kesme turu neredeyse
+    hiç gerekmiyor ve `reach` kodlamasının eklediği değişkenler saf maliyete
+    dönüşüyor. Ölçülen fark dört ila beş kat.
     """
     _require()
     started = time.perf_counter()

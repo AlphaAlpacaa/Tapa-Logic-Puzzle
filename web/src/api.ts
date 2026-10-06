@@ -63,6 +63,26 @@ export interface Difficulty {
   elapsed: number;
 }
 
+export interface VerifyResponse {
+  ok: boolean;
+  status: string;
+  message: string;
+  code: string;
+  difficulty?: Difficulty;
+  solution?: string[];
+  clues?: Clue[];
+  saved?: boolean;
+  total?: number;
+}
+
+export interface HumanEntry {
+  id: string;
+  number: string;
+  rows: number;
+  cols: number;
+  label: string;
+}
+
 async function send<T>(path: string, body?: unknown): Promise<T> {
   const response = await fetch(`/api${path}`, {
     method: body === undefined ? "GET" : "POST",
@@ -102,6 +122,15 @@ export const api = {
       cols: puzzle.cols,
       clues: puzzle.clues,
     }),
+  verifyEntry: (rows: number, cols: number, clues: Clue[]) =>
+    send<VerifyResponse>("/human/verify", { rows, cols, clues }),
+  saveEntry: (rows: number, cols: number, clues: Clue[], number: string, source: string) =>
+    send<VerifyResponse>("/human/save", { rows, cols, clues, number, source }),
+  verifySolution: (rows: number, cols: number, grid: string[]) =>
+    send<VerifyResponse>("/human/verify-solution", { rows, cols, grid }),
+  saveSolution: (rows: number, cols: number, grid: string[], number: string, source: string) =>
+    send<VerifyResponse>("/human/save-solution", { rows, cols, grid, number, source }),
+  listHuman: () => send<HumanEntry[]>("/human"),
   difficulty: (puzzle: Puzzle) =>
     send<Difficulty>("/difficulty", {
       rows: puzzle.rows,

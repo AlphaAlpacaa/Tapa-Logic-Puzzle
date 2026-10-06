@@ -29,7 +29,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from engine import Board, cpsat, from_code, generator, solver  # noqa: E402
+from engine import Board, Cell, cpsat, from_code, generator, solver  # noqa: E402
 from engine import solution_to_rows  # noqa: E402
 
 
@@ -129,12 +129,15 @@ def compare(records: list[dict], connectivity: str, time_limit: float) -> None:
 # Ölçeklenme
 # ---------------------------------------------------------------------- #
 
-def scale_test(sizes: list[int], time_limit: float, connectivity: str, seed: int) -> None:
+def scale_test(sizes: list[int], time_limit: float, connectivity: str, seed: int,
+               attempts: int = 40) -> None:
     """Artan boyutlarda üretilmiş bulmacalarda iki çözücüyü karşılaştırır.
 
-    Üretim, mantıksal çözücüye dayandığı için büyük boyutlarda yavaşlar; bu
-    yüzden burada hedef zorluk şart koşulmaz, sadece geçerli bir bulmaca
-    üretilir.
+    Buradaki amaç güzel bulmaca üretmek değil, çözücüleri büyük tahtalarda
+    yarıştırmak. Bu yüzden veri kümesi üretimindeki katı ayarlar kullanılmaz:
+    ipucu değerine sınır konmaz, eleme hafif tutulur ve hedef zorluk şart
+    koşulmaz. Katı ayarlarla büyük tahtalarda uygun duvar bulunamıyor ve test
+    ölçmek istediği şeye hiç ulaşamıyor.
     """
     rng = random.Random(seed)
     has_cpsat = cpsat.available()
@@ -144,7 +147,8 @@ def scale_test(sizes: list[int], time_limit: float, connectivity: str, seed: int
 
     for size in sizes:
         item = generator.generate(size, size, rng, wall_density=0.45,
-                                  max_level=solver.MAX_LEVEL, attempts=40)
+                                  max_level=3, max_clue_value=8,
+                                  aggressiveness=0.3, attempts=attempts)
         if item is None:
             print(f"{size}x{size:<3}  bulmaca üretilemedi")
             continue
@@ -197,25 +201,100 @@ def encoding_test(records: list[dict], time_limit: float) -> None:
     print(f"{'toplam':<14}{totals['reach']:>11.2f}s{totals['cuts']:>11.2f}s")
 
 
+# ---------------------------------------------------------------------- #
+# Arama gerektiren zor örnekler
+# ---------------------------------------------------------------------- #
+
+def hard_test(sizes: list[int], keep: float, time_limit: float,
+              connectivity: str, seed: int, rounds: int = 2) -> None:
+    """İki çözücüyü, aramanın kaçınılmaz olduğu örneklerde karşılaştırır.
+
+    Veri kümesindeki bulmacalar "saf mantıkla çözülebilsin" şartıyla üretildi;
+    orada mantıksal çözücü hiç arama yapmıyor, CP-SAT ise ön-işlemeyle
+    bitiriyor. İkisi de aramadığı sürece karşılaştırma algoritmaları değil,
+    model kurma maliyetini ölçer.
+
+    Burada ipucuların yalnızca bir kısmı bırakılır. Tahta eksik kısıtlandığı
+    için tek çözümlü olmayabilir; istenen de budur. Sorulan soru "çözümü bul"
+    değil, "en fazla iki çözüm say" — yani teklik kontrolü, ki üreticinin
+    gerçekte ihtiyaç duyduğu işlem de bu.
+    """
+    rng = random.Random(seed)
+    has_cpsat = cpsat.available()
+
+    print(f"ipucuların %{keep * 100:.0f}'i bırakıldı | bulmaca başına sınır {time_limit}s")
+    print("Seyrek ipucu bırakmanın amacı aramayı zorunlu kılmak: tam ipuçlu tahtalarda")
+    print("iki çözücü de yalnızca yayılım yapıyor ve ölçülen şey algoritma değil, model")
+    print("kurma maliyeti oluyor.\n")
+    print(f"{'boyut':>7}{'ipucu':>7}{'mantık':>11}{'cp-sat':>11}{'çözüm':>8}  not")
+    print("-" * 60)
+
+    for size in sizes:
+        for _ in range(rounds):
+            wall = generator.grow_wall(size, size, round(size * size * 0.45), rng)
+            solved = Board(size, size)
+            for pos in wall:
+                solved.set_cell(*pos, Cell.FILLED)
+            clues = generator.covering_clues(solved, wall, rng, max_clue_value=8)
+            if clues is None:
+                print(f"{size}x{size:<4}  ipucu kümesi kurulamadı")
+                continue
+
+            kept = dict(rng.sample(sorted(clues.items()), k=max(1, round(len(clues) * keep))))
+            board = Board(size, size, kept)
+
+            logic = solver.solve(board, limit=2, time_limit=time_limit)
+            line = (f"{size}x{size:>4}{len(kept):>7}"
+                    f"{logic.stats.elapsed:>10.3f}s")
+            if logic.stats.timed_out:
+                line = line[:-1] + "+"  # sınıra takıldı
+
+            if not has_cpsat:
+                print(line + f"{'-':>11}{logic.count:>8}  ortools yok")
+                continue
+
+            cp = cpsat.solve(board, limit=2, connectivity=connectivity, time_limit=time_limit)
+            note = "uyumlu"
+            if logic.stats.timed_out or cp.hit_limit:
+                note = "biri sınıra takıldı, sayılar kıyaslanamaz"
+            elif logic.count != cp.count:
+                note = f"ÇÖZÜM SAYISI FARKLI (mantık {logic.count}, cp-sat {cp.count})"
+            print(line + f"{cp.elapsed:>10.3f}s{logic.count:>8}  "
+                  f"{note} (dal {cp.branches}, çatışma {cp.conflicts})")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Tapa çözücü karşılaştırması")
     parser.add_argument("--limit", type=int, default=None, help="kaç bulmaca denensin")
-    parser.add_argument("--connectivity", choices=["reach", "cuts"], default="reach",
+    parser.add_argument("--connectivity", choices=["reach", "cuts"], default="cuts",
                         help="CP-SAT bağlantılılık kodlaması")
+    parser.add_argument("--attempts", type=int, default=40,
+                        help="ölçeklenme testinde bulmaca başına üretim denemesi")
     parser.add_argument("--time-limit", type=float, default=60.0,
                         help="CP-SAT için bulmaca başına saniye sınırı")
     parser.add_argument("--scale", action="store_true",
                         help="artan boyutlarda ölçeklenme testi")
-    parser.add_argument("--sizes", type=str, default="8,10,12,14,16,18,20",
-                        help="ölçeklenme testindeki boyutlar")
+    parser.add_argument("--sizes", type=str, default=None,
+                        help="test edilecek boyutlar (--scale için 8,10,12,14,16,18; "
+                             "--hard için 18,22,26,30)")
     parser.add_argument("--encodings", action="store_true",
                         help="iki bağlantılılık kodlamasını karşılaştır")
+    parser.add_argument("--hard", action="store_true",
+                        help="aramanın kaçınılmaz olduğu seyrek ipuçlu örneklerde karşılaştır")
+    parser.add_argument("--keep", type=float, default=0.6,
+                        help="--hard modunda ipucuların hangi oranı bırakılsın")
     parser.add_argument("--seed", type=int, default=7)
     args = parser.parse_args()
 
+    default_sizes = "18,22,26,30" if args.hard else "8,10,12,14,16,18"
+    sizes = [int(part) for part in (args.sizes or default_sizes).split(",") if part.strip()]
+
+    if args.hard:
+        hard_test(sizes, args.keep, args.time_limit, args.connectivity, args.seed)
+        return
+
     if args.scale:
-        sizes = [int(part) for part in args.sizes.split(",") if part.strip()]
-        scale_test(sizes, args.time_limit, args.connectivity, args.seed)
+        scale_test(sizes, args.time_limit, args.connectivity, args.seed, args.attempts)
         return
 
     records = load_dataset(args.limit)

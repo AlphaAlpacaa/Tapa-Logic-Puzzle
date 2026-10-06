@@ -1,0 +1,117 @@
+{
+  "format": "tapa-puzzle",
+  "version": 1,
+  "rows": 9,
+  "cols": 9,
+  "clues": [
+    {
+      "r": 0,
+      "c": 2,
+      "values": [
+        3
+      ]
+    },
+    {
+      "r": 1,
+      "c": 1,
+      "values": [
+        2,
+        1
+      ]
+    },
+    {
+      "r": 1,
+      "c": 6,
+      "values": [
+        1
+      ]
+    },
+    {
+      "r": 2,
+      "c": 1,
+      "values": [
+        3,
+        1,
+        1
+      ]
+    },
+    {
+      "r": 2,
+      "c": 6,
+      "values": [
+        0
+      ]
+    },
+    {
+      "r": 3,
+      "c": 5,
+      "values": [
+        3
+      ]
+    },
+    {
+      "r": 4,
+      "c": 6,
+      "values": [
+        1
+      ]
+    },
+    {
+      "r": 5,
+      "c": 2,
+      "values": [
+        4,
+        1
+      ]
+    },
+    {
+      "r": 5,
+      "c": 3,
+      "values": [
+        4,
+        1
+      ]
+    },
+    {
+      "r": 5,
+      "c": 6,
+      "values": [
+        2,
+        1
+      ]
+    },
+    {
+      "r": 7,
+      "c": 0,
+      "values": [
+        5
+      ]
+    },
+    {
+      "r": 8,
+      "c": 2,
+      "values": [
+        5
+      ]
+    },
+    {
+      "r": 8,
+      "c": 5,
+      "values": [
+        0
+      ]
+    }
+  ],
+  "meta": {
+    "baslik": "çok zor 9x9",
+    "zorluk": "çok zor",
+    "kaynak": "tapa-0032",
+    "teknikler": {
+      "ipucu okuma": 42,
+      "2x2 kuralı": 4,
+      "bağlantı boğazı": 5,
+      "çelişkiyle çıkarım": 6,
+      "ulaşılmaz bölge": 11
+    }
+  }
+}

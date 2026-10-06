@@ -13,7 +13,7 @@ interface Props {
 export const key = (r: number, c: number) => `${r},${c}`;
 
 /** İpucu rakamlarının hücre içindeki yerleşimi — gerçek Tapa dizgisini izler. */
-function clueSlots(count: number): string[] {
+export function clueSlots(count: number): string[] {
   switch (count) {
     case 1:
       return ["center"];

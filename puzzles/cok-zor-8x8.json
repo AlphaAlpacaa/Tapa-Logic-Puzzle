@@ -1,0 +1,102 @@
+{
+  "format": "tapa-puzzle",
+  "version": 1,
+  "rows": 8,
+  "cols": 8,
+  "clues": [
+    {
+      "r": 0,
+      "c": 7,
+      "values": [
+        1
+      ]
+    },
+    {
+      "r": 1,
+      "c": 1,
+      "values": [
+        2,
+        1
+      ]
+    },
+    {
+      "r": 1,
+      "c": 4,
+      "values": [
+        2,
+        1
+      ]
+    },
+    {
+      "r": 1,
+      "c": 7,
+      "values": [
+        2
+      ]
+    },
+    {
+      "r": 2,
+      "c": 1,
+      "values": [
+        3,
+        2
+      ]
+    },
+    {
+      "r": 4,
+      "c": 4,
+      "values": [
+        4,
+        1
+      ]
+    },
+    {
+      "r": 4,
+      "c": 7,
+      "values": [
+        2
+      ]
+    },
+    {
+      "r": 5,
+      "c": 5,
+      "values": [
+        3,
+        2
+      ]
+    },
+    {
+      "r": 6,
+      "c": 0,
+      "values": [
+        1,
+        1
+      ]
+    },
+    {
+      "r": 6,
+      "c": 7,
+      "values": [
+        1
+      ]
+    },
+    {
+      "r": 7,
+      "c": 6,
+      "values": [
+        3
+      ]
+    }
+  ],
+  "meta": {
+    "baslik": "çok zor 8x8",
+    "zorluk": "çok zor",
+    "kaynak": "tapa-0035",
+    "teknikler": {
+      "ipucu okuma": 32,
+      "2x2 kuralı": 5,
+      "bağlantı boğazı": 12,
+      "çelişkiyle çıkarım": 4
+    }
+  }
+}
