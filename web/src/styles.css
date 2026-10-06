@@ -1,0 +1,393 @@
+:root {
+  --slate: #232a33;
+  --slate-deep: #1a2027;
+  --slate-lift: #2c343e;
+  --paper: #f7f8f6;
+  --paper-tint: #e9edef;
+  --ink: #141a1f;
+  --rule: #c7ced5;
+  --rule-strong: #94a1ad;
+  --alarm: #a33142;
+  --deduce: #1f6f63;
+  --text: #dde4ea;
+  --text-muted: #8d99a5;
+
+  --frame: 2px;
+  font-family: Archivo, system-ui, sans-serif;
+  font-size: 15px;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--slate);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid rgba(221, 228, 234, 0.22);
+  border-radius: 3px;
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: rgba(221, 228, 234, 0.09);
+  border-color: rgba(221, 228, 234, 0.4);
+}
+
+button:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+
+button:focus-visible,
+textarea:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--deduce);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------- şema */
+
+.shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--slate-deep);
+  border-bottom: 1px solid rgba(221, 228, 234, 0.1);
+  flex-wrap: wrap;
+}
+
+.wordmark {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+
+.bar__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.stage {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20rem;
+  gap: 2rem;
+  padding: 2rem 1.5rem;
+  align-items: start;
+}
+
+.stage__board {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.placeholder,
+.muted {
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.solved {
+  margin: 0;
+  color: var(--paper);
+  background: var(--deduce);
+  padding: 0.5rem 0.9rem;
+  border-radius: 3px;
+}
+
+/* ---------------------------------------------------------------- tahta */
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 1fr);
+  aspect-ratio: var(--cols) / var(--rows);
+  width: min(100%, calc(var(--cols) * 3.4rem), calc(68vh * var(--cols) / var(--rows)));
+  background: var(--paper);
+  border-top: 1px solid var(--rule);
+  border-left: 1px solid var(--rule);
+  box-shadow: 0 0 0 var(--frame) var(--rule-strong);
+  touch-action: none;
+}
+
+.board:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 var(--frame) var(--deduce);
+}
+
+.cell {
+  position: relative;
+  container-type: size;
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.cell--filled {
+  background: var(--ink);
+}
+
+/* Duvarın sürekliliği: bitişik iki dolu hücre arasındaki ayırıcı çizgi
+   duvarın rengine boyanır, böylece duvar tek bir şekil olarak okunur ve
+   bağlantılılık kuralı gözle doğrulanabilir hâle gelir. */
+.cell.join-right {
+  border-right-color: var(--ink);
+}
+
+.cell.join-down {
+  border-bottom-color: var(--ink);
+}
+
+.cell--clue {
+  background: var(--paper-tint);
+  cursor: default;
+}
+
+.dot {
+  width: 15%;
+  height: 15%;
+  border-radius: 50%;
+  background: var(--rule-strong);
+}
+
+.clue {
+  position: absolute;
+  inset: 0;
+  color: var(--ink);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.clue__n {
+  position: absolute;
+  font-size: 40cqh;
+}
+
+.clue--1 .clue__n {
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 56cqh;
+}
+
+.clue__n--tl {
+  top: 10%;
+  left: 14%;
+}
+.clue__n--tr {
+  top: 10%;
+  right: 14%;
+}
+.clue__n--bl {
+  bottom: 10%;
+  left: 14%;
+}
+.clue__n--br {
+  bottom: 10%;
+  right: 14%;
+}
+.clue__n--bc {
+  bottom: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.cell--error {
+  box-shadow: inset 0 0 0 2px var(--alarm);
+}
+
+.cell--error.cell--clue .clue {
+  color: var(--alarm);
+}
+
+.cell--hint {
+  box-shadow: inset 0 0 0 2px var(--deduce);
+  animation: pulse 1.1s ease-out 2;
+}
+
+.cell--focus {
+  outline: 2px solid var(--deduce);
+  outline-offset: -2px;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: inset 0 0 0 2px var(--deduce);
+  }
+  50% {
+    box-shadow: inset 0 0 0 7px rgba(31, 111, 99, 0.35);
+  }
+  100% {
+    box-shadow: inset 0 0 0 2px var(--deduce);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cell--hint {
+    animation: none;
+  }
+}
+
+/* ----------------------------------------------------------- yan panel */
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  background: var(--slate-lift);
+  border: 1px solid rgba(221, 228, 234, 0.08);
+  border-radius: 4px;
+  padding: 1.25rem;
+}
+
+.rail__block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.rail h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.library {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.library__item {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  text-align: left;
+}
+
+.library__item.is-open {
+  border-color: var(--deduce);
+  background: rgba(31, 111, 99, 0.18);
+}
+
+.library__size {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.code,
+.codeline {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.78rem;
+  background: var(--slate-deep);
+  color: var(--text);
+  border: 1px solid rgba(221, 228, 234, 0.14);
+  border-radius: 3px;
+  padding: 0.5rem;
+  resize: vertical;
+  word-break: break-all;
+}
+
+.wide {
+  width: 100%;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.issues {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: var(--alarm);
+  line-height: 1.45;
+}
+
+.alarm {
+  margin: 0;
+  color: var(--alarm);
+  line-height: 1.5;
+}
+
+.deduce {
+  margin: 0;
+  color: #74c4b6;
+  line-height: 1.5;
+}
+
+/* ------------------------------------------------------------- dar ekran */
+
+@media (max-width: 860px) {
+  .stage {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 1rem;
+    gap: 1.25rem;
+  }
+
+  .board {
+    width: min(100%, calc(60vh * var(--cols) / var(--rows)));
+  }
+}
+
+.level {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.techniques {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.86rem;
+}
+
+.techniques li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-bottom: 1px solid rgba(221, 228, 234, 0.08);
+  padding-bottom: 0.2rem;
+}

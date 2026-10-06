@@ -1,0 +1,32 @@
+{
+  "count": 80,
+  "bySize": {
+    "10x10": 4,
+    "11x11": 5,
+    "12x12": 2,
+    "6x6": 23,
+    "7x7": 21,
+    "8x8": 17,
+    "9x9": 8
+  },
+  "byDifficulty": {
+    "orta": 18,
+    "kolay": 14,
+    "zor": 28,
+    "çok zor": 20
+  },
+  "clueDensity": {
+    "min": 0.13,
+    "max": 0.2653,
+    "mean": 0.1979
+  },
+  "maxClueValue": {
+    "4": 5,
+    "5": 75
+  },
+  "wallDensity": {
+    "min": 0.3403,
+    "max": 0.5278,
+    "mean": 0.436
+  }
+}
